@@ -1,0 +1,106 @@
+r_template = r'''
+---
+title: "Luuna Daily Salary Report"
+date: $date
+output: html_document
+---
+
+# Daily Salaries 
+
+```{python}
+import pandas 
+df = pandas.read_csv("$file")
+dep_data = df.groupby(by="department")[["day_average_speed", "daily_salary"]].mean()
+title_data = df.groupby(by="title")[["day_average_speed", "daily_salary"]].mean()
+dep_labels = dep_data.index.values
+title_labels = title_data.index.values
+```
+```{r echo=FALSE, results='asis'}
+library(reticulate)
+knitr::kable(py$$df)
+```
+
+# Employee day_speed/salary scatter plot
+
+```{python}
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+dep_groups = df.groupby("department").groups
+dep_labels = df.department.drop_duplicates().sort_values().reset_index(drop=True)
+df['color'] = [list(dep_labels).index(dep) for dep in df.department]
+cmap = plt.cm.get_cmap('hsv', len(dep_labels) + 1)
+for name, ids in dep_groups.items():
+    dep_emps = pandas.DataFrame(
+        [df.loc[i][["day_average_speed", "daily_salary", "color"]] for i in ids])
+    ax.scatter(x=dep_emps.day_average_speed, y=dep_emps.daily_salary,
+               color=cmap(dep_emps.color), label=name)
+
+ax.legend()
+plt.xlabel("Day average speed")
+plt.ylabel("Daily Salary")
+
+plt.show()
+```
+
+# Mean velocity by department and by title
+
+```{python results='hide'}
+plt.rcdefaults()
+fig, ax = plt.subplots(2)
+
+y_pos0 = range(len(dep_labels))
+ax[0].barh(y_pos0, dep_data.day_average_speed, align="center")
+ax[0].set_yticks(y_pos0)
+ax[0].set_yticklabels(dep_labels)
+ax[0].invert_yaxis()
+ax[0].set_xlabel('Velocity')
+
+y_pos1 = range(len(title_labels))
+ax[1].barh(y_pos1, title_data.day_average_speed, align="center")
+ax[1].set_yticks(y_pos1)
+ax[1].set_yticklabels(title_labels)
+ax[1].invert_yaxis()
+ax[1].set_xlabel('Velocity')
+
+plt.tight_layout()
+```
+```{python}
+plt.show()
+```
+
+# Mean salary by department and by title
+
+```{python results='hide'}
+plt.rcdefaults()
+fig, ax = plt.subplots(2)
+
+y_pos0 = range(len(dep_labels))
+ax[0].barh(y_pos0, dep_data.daily_salary, align="center")
+ax[0].set_yticks(y_pos0)
+ax[0].set_yticklabels(dep_labels)
+ax[0].invert_yaxis()
+ax[0].set_xlabel('Daily salary')
+
+y_pos1 = range(len(title_labels))
+ax[1].barh(y_pos1, title_data.daily_salary, align="center")
+ax[1].set_yticks(y_pos1)
+ax[1].set_yticklabels(title_labels)
+ax[1].invert_yaxis()
+ax[1].set_xlabel('Daily salary')
+
+plt.tight_layout()
+```
+```{python}
+plt.show()
+```
+
+# Fastest employees
+
+```{python}
+fast_emps = df.sort_values('day_average_speed', ascending=False).head(10)[["full_name", "department",	"title",	"base_salary",	"day_average_speed",	"daily_salary"]]
+```
+```{r echo=FALSE, results='asis'}
+library(reticulate)
+knitr::kable(py$$fast_emps)
+```
+'''

@@ -1,0 +1,27 @@
+version: "3"
+services:
+  web:
+    build: .
+    ports:
+      - "3838:3838"
+    volumes:
+      - .:/code
+    networks:
+      - luunaNetwork
+  luunadb:
+    image: genschsa/mysql-employees
+    environment:
+      MYSQL_ROOT_PASSWORD: luuna
+    ports:
+      - 3306:3306
+    networks:
+      - luunaNetwork
+  server:
+    image: luuna/data-challenge-server:latest
+    networks:
+      - luunaNetwork
+    ports:
+      - 3000:3000
+networks:
+  luunaNetwork:
+    driver: "bridge"
